@@ -1,0 +1,6 @@
+sensor_msgs/Image image
+---
+sensor_msgs/RegionOfInterest[] regions
+geometry_msgs/Polygon[] polygons
+string[] decoded_strings
+string[] types
