@@ -2,6 +2,9 @@
   <arg name="input" default="/usb_cam/image_raw" />
   <node name="detect_qr_code" pkg="ros_qr_code" type="detect_qr_code.py" respawn="false" cwd="node" output="screen">
     <param name="target_symbols" value="QRCODE"/>
+    <param name="service_name_for_DetectQRCode" value="/detect_qr_code"/>
+    <param name="service_name_for_DetectQRCodeUntilSuccess"
+    value="/detect_qr_code_until_success"/>
   </node>
 
   <node name="ros_qr_code_input" pkg="topic_tools" type="throttle" respawn="false" cwd="node" output="screen"

@@ -1,0 +1,9 @@
+string topic
+bool compressed_input
+duration timeout
+duration interval
+---
+sensor_msgs/RegionOfInterest[] regions
+geometry_msgs/Polygon[] polygons
+string[] decoded_strings
+string[] types
