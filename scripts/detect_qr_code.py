@@ -27,13 +27,14 @@ class QRCodeDetector:
         target_symbol_str_list = sorted(
             target_symbol_specifier.upper().split()
         )
-        self.target_symbols = [
-            pyzbar.pyzbar.ZBarSymbol[k] for k in target_symbol_str_list
-        ]
-        self.target_symbols_str = ' '.join(target_symbol_str_list)
         if 'ALL' in target_symbol_str_list:
             self.target_symbols = None
             self.target_symbols_str = 'ALL'
+        else:
+            self.target_symbols = [
+                pyzbar.pyzbar.ZBarSymbol[k] for k in target_symbol_str_list
+            ]
+            self.target_symbols_str = ' '.join(target_symbol_str_list)
 
         rospy.loginfo("node_name: %s" % (self.node_name,))
         rospy.loginfo("target_symbols: %s" % (self.target_symbols_str,))
