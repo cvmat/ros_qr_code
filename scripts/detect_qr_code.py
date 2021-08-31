@@ -4,6 +4,9 @@ import rospy
 
 import pyzbar.pyzbar
 
+import cv2
+import numpy as np
+
 import cv_bridge
 import geometry_msgs.msg
 import sensor_msgs.msg
@@ -67,10 +70,15 @@ class QRCodeDetector:
         rospy.spin()
 
     def respond_to_service_request(self, req):
-        rgb_cv_img = self.cv_bridge.imgmsg_to_cv2(req.image, "bgr8")
+        if isinstance(req.image, sensor_msgs.msg.CompressedImage):
+            np_arr = np.frombuffer(req.image.data, np.uint8)
+            rgb_cv_img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        else:
+            rgb_cv_img = self.cv_bridge.imgmsg_to_cv2(req.image, "bgr8")
 
+        gray_img = cv2.cvtColor(rgb_cv_img, cv2.COLOR_BGR2GRAY)
         detection_result_list = pyzbar.pyzbar.decode(
-            rgb_cv_img, self.target_symbols
+            gray_img, self.target_symbols
         )
 
         res = ros_qr_code.srv.DetectQRCodeResponse()
@@ -113,22 +121,30 @@ class QRCodeDetector:
         req.timeout -- timeout.
         req.interval -- the interval for retrying image retrieval.
         """
+        global timeout_flag
         input_topic = req.topic
         input_is_compressed = req.compressed_input
         timeout = req.timeout
         interval_sec = req.interval
         timeout_flag = False
         def timeout_callback(event):
+            global timeout_flag
             timeout_flag = True
         #
         timer = rospy.Timer(timeout, timeout_callback, oneshot=True)
         res = ros_qr_code.srv.DetectQRCodeUntilSuccessResponse()
         while timeout_flag == False:
             try:
-                input_img_msg = rospy.wait_for_message(
-                    input_topic, sensor_msgs.msg.Image,
-                    timeout=timeout.to_sec()
-                )
+                if input_is_compressed:
+                    input_img_msg = rospy.wait_for_message(
+                        input_topic, sensor_msgs.msg.CompressedImage,
+                        timeout=timeout.to_sec()
+                    )
+                else:
+                    input_img_msg = rospy.wait_for_message(
+                        input_topic, sensor_msgs.msg.Image,
+                        timeout=timeout.to_sec()
+                    )
             except rospy.exceptions.ROSException as e:
                 # Catch the exception occurred by timeout.
                 break
