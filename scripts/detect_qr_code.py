@@ -15,12 +15,20 @@ import argparse
 import sys
 
 import ros_qr_code.srv
+import util
 
 class QRCodeDetector:
     def __init__(self, node_name):
         self.node_name = node_name
         rospy.loginfo("Invoke rospy.init_node().")
         rospy.init_node(self.node_name)
+
+        self.visualized_result_topic = rospy.get_param(
+            "~topic_for_visualized_result",
+            'detect_qr_code_visualized_result'
+        )
+        if len(self.visualized_result_topic) == 0:
+            self.visualized_result_topic = None
 
         service_list = [
             ('detect_qr_code',
@@ -66,6 +74,15 @@ class QRCodeDetector:
         for name, type_obj, method in self.service_info_list:
             self.service.append(rospy.Service(name, type_obj, method))
         #
+
+        if self.visualized_result_topic:
+            self.visualized_result_publisher = rospy.Publisher(
+                self.visualized_result_topic, sensor_msgs.msg.Image,
+                queue_size=1
+            )
+        else:
+            self.visualized_result_publisher = None
+        #
         rospy.loginfo("Ready to detect QR codes.")
         rospy.spin()
 
@@ -108,6 +125,16 @@ class QRCodeDetector:
             # types
             res.types.append(result.type)
         #
+        if self.visualized_result_publisher:
+            util.visualize_result_onto(rgb_cv_img, res)
+            try:
+                self.visualized_result_publisher.publish(
+                    self.cv_bridge.cv2_to_imgmsg(rgb_cv_img, "bgr8")
+                )
+            except cv_bridge.CvBridgeError as e:
+                rospy.logerr(e)
+                raise e
+            #
         #
         return res
 
